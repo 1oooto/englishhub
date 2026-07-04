@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI English Hub - Dark Premium</title>
+    
+    <!-- ★ iPhoneアプリ化（PWA）のための設定 ★ -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EngHub">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 256 256%22><rect width=%22256%22 height=%22256%22 rx=%2256%22 fill=%22%231e293b%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 font-size=%22110%22 font-family=%22sans-serif%22 font-weight=%22900%22 fill=%22%23818cf8%22>EH</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 256 256%22><rect width=%22256%22 height=%22256%22 rx=%2256%22 fill=%22%231e293b%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 font-size=%22110%22 font-family=%22sans-serif%22 font-weight=%22900%22 fill=%22%23818cf8%22>EH</text></svg>">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        body { background-color: #0f172a; color: #f1f5f9; overscroll-behavior-y: none; font-size: 16px; }
+        .progress-ring__circle { transition: stroke-dashoffset 0.3s linear; transform: rotate(-90deg); transform-origin: 50% 50%; }
+        button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        .recording-pulse { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 
+            0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); } 
+            70% { box-shadow: 0 0 0 15px rgba(225, 29, 72, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); } 
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 80px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        .glass-panel { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        
+        /* カスタムスライダーの大型化 */
+        input[type=range] { -webkit-appearance: none; background: transparent; width: 100px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; background: #475569; border-radius: 3px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; background: #818cf8; border-radius: 50%; cursor: pointer; margin-top: -8px; box-shadow: 0 0 8px rgba(0,0,0,0.5); }
+        input[type=range]::-moz-range-track { width: 100%; height: 6px; background: #475569; border-radius: 3px; }
+        input[type=range]::-moz-range-thumb { width: 22px; height: 22px; background: #818cf8; border-radius: 50%; cursor: pointer; border: none; box-shadow: 0 0 8px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body class="min-h-screen font-sans pb-32 selection:bg-indigo-500/30 pt-safe">
+
+    <!-- カスタム確認モーダル -->
+    <div id="customModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300 px-4">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-sm w-full transform scale-95 transition-transform duration-300" id="customModalContent">
+            <h3 id="customModalTitle" class="text-xl font-bold text-white mb-3">Confirm</h3>
+            <p id="customModalText" class="text-base text-slate-300 mb-6 leading-relaxed"></p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeCustomModal()" class="px-5 py-3 rounded-xl text-sm font-bold text-slate-400 bg-slate-900 hover:bg-slate-700 transition">キャンセル</button>
+                <button id="customModalConfirmBtn" class="px-5 py-3 rounded-xl text-sm font-bold text-white shadow-lg">実行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- テキスト選択時のツールチップボタン -->
+    <div id="selectionTooltip" class="hidden absolute z-50 bg-indigo-600 text-white px-4 py-2.5 rounded-xl shadow-[0_0_15px_rgba(79,70,229,0.5)] cursor-pointer text-sm font-bold flex items-center gap-1.5 hover:bg-indigo-500 transition transform -translate-x-1/2 -translate-y-full mt-[-10px] whitespace-nowrap active:scale-95">
+        <span class="material-icons-round text-base">add_circle</span> 辞書に追加
+    </div>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="fixed top-safe mt-5 left-1/2 transform -translate-x-1/2 bg-slate-800 border border-slate-700 text-white px-6 py-3 rounded-full shadow-2xl transition-all duration-300 opacity-0 scale-90 pointer-events-none z-50 text-base font-bold flex items-center gap-2 w-max max-w-[90%]">
+        <span id="toastIcon" class="material-icons-round text-lg">info</span>
+        <span id="toastMessage">Notification</span>
+    </div>
+
+    <!-- HEADER -->
+    <header class="glass-panel px-4 py-3 sticky top-0 z-30 flex justify-between items-center shadow-md">
+        <div class="flex items-center gap-2">
+            <span class="material-icons-round text-indigo-400 text-3xl drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]">lightbulb</span>
+            <span class="font-extrabold text-xl md:text-2xl tracking-tight text-white">AI English Hub</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <div id="headerSubtitle" class="text-xs font-bold text-slate-400 bg-slate-800/50 border border-slate-700 px-3 py-1.5 rounded-full uppercase tracking-wider">DASHBOARD</div>
+            <!-- 設定ボタン -->
+            <button onclick="switchSection('settings')" class="text-slate-400 hover:text-white transition p-2 bg-slate-800 rounded-xl border border-slate-700 shadow-sm hover:bg-slate-700"><span class="material-icons-round text-xl">settings</span></button>
+        </div>
+    </header>
+
+    <main class="max-w-xl mx-auto p-3 md:p-5 relative pb-safe">
+        
+        <!-- =================== ① DASHBOARD =================== -->
+        <section id="sec-dashboard" class="space-y-4 block">
+            <div class="space-y-3 pt-2">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider pl-2 mb-2">学習メニュー</h3>
+                
+                <button onclick="switchSection('script')" class="w-full flex items-center justify-between p-4 md:p-5 bg-slate-800 rounded-2xl border border-slate-700 hover:border-pink-500/50 hover:bg-slate-800/80 transition text-left group shadow-sm">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center group-hover:bg-pink-500/20 transition"><span class="material-icons-round text-2xl">description</span></div>
+                        <div>
+                            <h4 class="font-bold text-base md:text-lg text-slate-100">1分間スクリプト作成</h4>
+                            <p class="text-sm text-slate-400 mt-1">日本語交じりで話し、完璧な原稿を作成</p>
+                        </div>
+                    </div>
+                    <span class="material-icons-round text-slate-500 text-2xl group-hover:text-pink-400 transition">chevron_right</span>
+                </button>
+
+                <button onclick="switchSection('speaking')" class="w-full flex items-center justify-between p-4 md:p-5 bg-slate-800 rounded-2xl border border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800/80 transition text-left group shadow-sm">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center group-hover:bg-indigo-500/20 transition"><span class="material-icons-round text-2xl">mic</span></div>
+                        <div>
+                            <h4 class="font-bold text-base md:text-lg text-slate-100">1分間フリートーク添削</h4>
+                            <p class="text-sm text-slate-400 mt-1">話した英語の文法を直しフレーズを抽出</p>
+                        </div>
+                    </div>
+                    <span class="material-icons-round text-slate-500 text-2xl group-hover:text-indigo-400 transition">chevron_right</span>
+                </button>
+
+                <button onclick="switchSection('spaced')" class="w-full flex items-center justify-between p-4 md:p-5 bg-slate-800 rounded-2xl border border-slate-700 hover:border-emerald-500/50 hover:bg-slate-800/80 transition text-left group shadow-sm">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500/20 transition"><span class="material-icons-round text-2xl">auto_awesome</span></div>
+                        <div>
+                            <h4 class="font-bold text-base md:text-lg text-slate-100">創造的復習クイズ</h4>
+                            <p class="text-sm text-slate-400 mt-1">忘却曲線に従い、最適なタイミングで復習</p>
+                        </div>
+                    </div>
+                    <span class="material-icons-round text-slate-500 text-2xl group-hover:text-emerald-400 transition">chevron_right</span>
+                </button>
+
+                <button onclick="switchSection('collection')" class="w-full flex items-center justify-between p-4 md:p-5 bg-slate-800 rounded-2xl border border-slate-700 hover:border-amber-500/50 hover:bg-slate-800/80 transition text-left group shadow-sm">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:bg-amber-500/20 transition"><span class="material-icons-round text-2xl">library_books</span></div>
+                        <div>
+                            <h4 class="font-bold text-base md:text-lg text-slate-100">Myフレーズ辞典</h4>
+                            <p class="text-sm text-slate-400 mt-1">抽出・選択したフレーズを管理・確認</p>
+                        </div>
+                    </div>
+                    <span class="material-icons-round text-slate-500 text-2xl group-hover:text-amber-400 transition">chevron_right</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- =================== ② SCRIPT MAKER =================== -->
+        <section id="sec-script" class="space-y-4 hidden">
+            <div class="flex gap-2 p-1.5 bg-slate-800 rounded-xl mb-2">
+                <button id="tab-script-new" onclick="switchScriptTab('new')" class="flex-1 py-3 text-sm font-bold rounded-lg bg-pink-500/20 text-pink-400 transition">新規作成</button>
+                <button id="tab-script-log" onclick="switchScriptTab('log')" class="flex-1 py-3 text-sm font-bold rounded-lg text-slate-400 hover:text-slate-200 transition">保存ログ</button>
+            </div>
+
+            <div id="view-script-new" class="space-y-4">
+                <div class="glass-panel p-5 rounded-2xl shadow-lg relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-pink-500/10 rounded-full blur-2xl"></div>
+                    <h3 class="text-xl font-bold text-white mb-2">スピーチ原稿メーカー</h3>
+                    <p class="text-sm text-slate-400 mb-4 leading-relaxed">日本語や英語が混ざってもOK！言いたい内容を吹き込むと、AIが約1分間(BPM150想定)のネイティブスクリプトを作成します。</p>
+                    
+                    <div class="relative">
+                        <textarea id="smInput" rows="5" placeholder="例: 最近AIがすごくて、仕事が大きく変わると思う。Especially in creative field..." class="w-full p-4 pr-12 pb-14 bg-slate-900 border border-slate-700 rounded-xl text-base focus:outline-none focus:border-pink-500 text-slate-200 transition placeholder-slate-600 resize-none"></textarea>
+                        <button id="smVoiceBtn" onclick="toggleScriptVoiceInput()" class="absolute right-3 bottom-3 px-3 py-2 bg-pink-500/20 text-pink-400 rounded-lg hover:bg-pink-500/30 transition flex items-center gap-1.5 shadow-sm">
+                            <span class="material-icons-round text-lg" id="smVoiceIcon">mic</span>
+                            <span id="smVoiceText" class="text-xs font-bold hidden">録音停止</span>
+                        </button>
+                    </div>
+                    <button id="smGenerateBtn" onclick="generateScript()" class="w-full mt-4 py-3.5 bg-pink-600 text-white rounded-xl font-bold text-base shadow-lg hover:bg-pink-500 transition">スクリプトを生成</button>
+                </div>
+
+                <div id="smResultArea" class="hidden space-y-4">
+                    <div id="smSaveActionArea" class="flex justify-end mt-1 mb-[-10px]">
+                        <button id="smSaveLogBtn" onclick="saveCurrentScript()" class="flex items-center gap-1.5 bg-slate-800 text-pink-400 border border-pink-500/30 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-pink-500/10 transition z-10 relative">
+                            <span class="material-icons-round text-lg">save</span> ログに保存
+                        </button>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl shadow-lg">
+                        <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3 flex-wrap gap-3">
+                            <h3 class="text-base font-bold text-white uppercase tracking-wider">Your 1-Minute Speech</h3>
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-1 bg-slate-800/80 px-3 py-2 rounded-lg border border-slate-700">
+                                    <span class="material-icons-round text-slate-400 text-sm">speed</span>
+                                    <input type="range" id="smSpeedSlider" min="0.5" max="2.0" step="0.1" value="1.0" class="appearance-none cursor-pointer">
+                                    <span id="smSpeedValue" class="text-sm font-bold text-slate-300 w-8 text-right">1.0x</span>
+                                </div>
+                                <button onclick="speakText(document.getElementById('smScriptText').innerText, this)" class="flex items-center gap-1 text-sm bg-indigo-500/20 text-indigo-300 px-4 py-2 rounded-lg font-bold hover:bg-indigo-500/30 transition min-w-[80px] justify-center shadow-sm">
+                                    <span class="material-icons-round text-xl">volume_up</span> 読む
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-indigo-300 mb-3">💡 わからない単語を長押し（選択）すると辞書に追加できます</p>
+                        <div id="smScriptText" class="text-slate-200 font-medium text-lg leading-relaxed p-4 bg-slate-900/50 rounded-xl border border-slate-700"></div>
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mt-5 mb-2">日本語訳</h3>
+                        <p id="smTranslationText" class="text-slate-400 text-sm md:text-base leading-relaxed"></p>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl shadow-lg border border-pink-500/20">
+                        <h3 class="text-base font-bold text-pink-400 mb-3">このテーマで学べる表現</h3>
+                        <ul id="smPhrasesList" class="space-y-3"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-script-log" class="hidden space-y-4">
+                <div id="scriptLogEmpty" class="text-center py-10 text-slate-500 text-base">まだ保存されたスクリプトがありません。</div>
+                <div id="scriptLogList" class="space-y-4"></div>
+            </div>
+        </section>
+
+        <!-- =================== ③ SPEAKING (Talk) =================== -->
+        <section id="sec-speaking" class="space-y-4 hidden">
+            <div class="glass-panel p-6 rounded-2xl shadow-lg flex flex-col items-center relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl"></div>
+                <div class="relative flex items-center justify-center mb-6 mt-4">
+                    <svg class="w-48 h-48 drop-shadow-xl">
+                        <circle class="text-slate-800" stroke-width="10" stroke="currentColor" fill="transparent" r="86" cx="96" cy="96"/>
+                        <circle id="progressCircle" class="progress-ring__circle text-indigo-500" stroke-width="10" stroke-linecap="round" stroke="currentColor" fill="transparent" r="86" cx="96" cy="96" stroke-dasharray="540" stroke-dashoffset="0"/>
+                    </svg>
+                    <div class="absolute flex flex-col items-center">
+                        <span id="timerText" class="text-5xl font-black text-white font-mono">60</span>
+                        <span class="text-sm font-bold text-slate-400 tracking-widest uppercase mt-1">Sec</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-5 mb-4">
+                    <button id="recordBtn" onclick="toggleMainRecording()" class="w-24 h-24 rounded-full bg-indigo-600 text-white font-extrabold text-lg shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:bg-indigo-500 transition-all transform active:scale-95 z-10">START</button>
+                    <button onclick="resetMainRecording()" class="w-14 h-14 rounded-full bg-slate-800 text-slate-300 font-bold text-sm border border-slate-700 hover:bg-slate-700 transition transform active:scale-95 z-10">RST</button>
+                </div>
+                <div id="statusMessage" class="text-sm font-bold text-slate-400 text-center">英語のみで話し始めてください。</div>
+                
+                <!-- ★ AIにお題を生成してもらうボタン -->
+                <button onclick="generateSpeakingTopic()" class="mt-4 px-4 py-2 bg-indigo-500/20 text-indigo-300 rounded-xl text-sm font-bold hover:bg-indigo-500/30 transition flex items-center gap-1.5 shadow-sm relative z-10">
+                    <span class="material-icons-round text-lg">auto_awesome</span> 話すテーマをAIに考えてもらう
+                </button>
+                
+                <!-- 生成されたお題の表示エリア -->
+                <div id="topicDisplayArea" class="hidden mt-4 w-full p-4 bg-slate-900/80 rounded-xl border border-indigo-500/20 text-center relative z-10">
+                    <p id="generatedTopicEn" class="text-indigo-200 font-bold text-lg mb-2 leading-tight"></p>
+                    <p id="generatedTopicJa" class="text-slate-400 text-xs"></p>
+                </div>
+            </div>
+
+            <div id="speakingResultArea" class="hidden space-y-4">
+                <div class="glass-panel p-5 rounded-2xl shadow-lg relative">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Original Transcript</h3>
+                    <div id="transcript" class="text-slate-300 text-lg leading-relaxed p-4 bg-slate-900 rounded-xl border border-slate-700 min-h-[60px]"></div>
+                    
+                    <button id="btnAnalyzeSpeech" onclick="startSpeechAnalysis()" class="w-full mt-4 py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-500 transition text-base flex items-center justify-center gap-2 hidden">
+                        <span class="material-icons-round text-xl">auto_awesome</span> AIに添削・フレーズ抽出してもらう
+                    </button>
+                </div>
+
+                <div id="aiLoading" class="hidden flex flex-col items-center py-8 glass-panel rounded-2xl shadow-lg">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-4 border-indigo-400 mb-3"></div>
+                    <span class="text-sm font-bold text-indigo-300 tracking-wide">AIが解析中...</span>
+                </div>
+                
+                <div id="analysisResultContainer" class="hidden space-y-4">
+                    <div class="glass-panel p-5 rounded-2xl shadow-lg space-y-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-sm font-bold text-indigo-400 uppercase tracking-wider">Corrected (自然な修正版)</h3>
+                            <button onclick="speakText(document.getElementById('correctedTranscript').innerText, this)" class="flex items-center gap-1 text-sm bg-indigo-500/20 text-indigo-300 px-4 py-2 rounded-lg font-bold hover:bg-indigo-500/30 transition min-w-[80px] justify-center shadow-sm">
+                                <span class="material-icons-round text-xl">volume_up</span> 読む
+                            </button>
+                        </div>
+                        <div id="correctedTranscript" class="text-white font-medium text-lg leading-relaxed p-4 bg-indigo-900/20 rounded-xl border border-indigo-500/30 min-h-[60px]"></div>
+                    </div>
+
+                    <div id="grammarCorrectionsArea" class="hidden glass-panel p-5 rounded-2xl shadow-lg">
+                        <h3 class="text-sm font-bold text-rose-400 uppercase tracking-wider mb-4 border-b border-slate-700 pb-2">Grammar Corrections</h3>
+                        <ul id="grammarResults" class="space-y-4"></ul>
+                    </div>
+                    
+                    <div id="extractedPhrasesArea" class="hidden glass-panel p-5 rounded-2xl shadow-lg border border-indigo-500/20">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-bold text-indigo-400 uppercase tracking-wider">Extracted Key Phrases</h3>
+                            <span id="detectedTheme" class="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full font-bold"></span>
+                        </div>
+                        <ul id="analysisResults" class="space-y-3"></ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================== ④ QUIZ =================== -->
+        <section id="sec-spaced" class="space-y-4 hidden">
+            <div id="quizSetupArea" class="glass-panel p-8 rounded-2xl shadow-lg text-center border border-emerald-500/20 relative overflow-hidden">
+                <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl"></div>
+                <span class="material-icons-round text-6xl text-emerald-400 mb-3 drop-shadow-[0_0_15px_rgba(52,211,153,0.4)]">psychology</span>
+                <h3 class="text-xl font-bold text-white mb-3">今日の復習セッション</h3>
+                <p id="quizInfoText" class="text-base text-slate-300 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-700"></p>
+                <button onclick="startQuiz('mix')" class="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold shadow-lg hover:bg-emerald-500 transition text-lg z-10 relative">🔄 おまかせミックスで開始</button>
+            </div>
+
+            <div id="quizRunnerArea" class="hidden glass-panel rounded-2xl p-5 shadow-lg min-h-[400px] flex flex-col justify-between relative overflow-hidden">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+                    <div class="flex flex-col gap-1.5">
+                        <span id="quizModeBadge" class="inline-block px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider"></span>
+                        <div class="flex gap-2">
+                            <span id="quizThemeBadge" class="text-xs font-bold text-slate-400 bg-slate-800 px-3 py-1 rounded-full"></span>
+                            <span id="quizStageBadge" class="text-xs font-bold text-emerald-400 bg-emerald-900/30 px-3 py-1 rounded-full border border-emerald-500/30"></span>
+                        </div>
+                    </div>
+                    <span id="quizCountText" class="text-sm font-bold text-slate-400 bg-slate-800 px-3 py-1.5 rounded-full whitespace-nowrap h-fit"></span>
+                </div>
+
+                <div id="modeSentenceArea" class="hidden space-y-4 flex-1">
+                    <div class="bg-indigo-900/20 p-4 rounded-xl border border-indigo-500/20">
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-1">Target Phrase</span>
+                        <div class="flex justify-between items-center">
+                            <p id="msTarget" class="text-2xl font-black text-white tracking-wide"></p>
+                            <button onclick="playWebSpeechAPI(currentCard.targetPhrase, this)" class="text-indigo-400 hover:text-indigo-300 p-2 bg-indigo-500/20 rounded-lg min-w-[40px] justify-center shadow-sm"><span class="material-icons-round text-2xl">volume_up</span></button>
+                        </div>
+                        <p id="msMeaning" class="text-base text-indigo-300 mt-2 font-medium leading-relaxed"></p>
+                    </div>
+                    
+                    <div class="relative mt-2">
+                        <textarea id="msUserInput" rows="3" placeholder="この表現を使ってオリジナルの英文を作成..." class="w-full p-4 pr-14 bg-slate-900 border border-slate-700 rounded-xl text-lg focus:outline-none focus:border-indigo-500 text-slate-200 transition resize-none"></textarea>
+                        <button id="quizVoiceBtn" onclick="toggleQuizVoiceInput()" class="absolute right-3 bottom-3 p-3 bg-indigo-500/20 text-indigo-400 rounded-lg hover:bg-indigo-500/40 transition flex items-center justify-center">
+                            <span class="material-icons-round text-xl" id="quizMicIcon">mic</span>
+                        </button>
+                    </div>
+                    <button id="msCheckBtn" onclick="checkUserSentence()" class="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-500 transition text-lg mt-2">AIに判定してもらう</button>
+
+                    <div id="msFeedbackArea" class="hidden space-y-4 mt-4">
+                        <div class="p-5 rounded-2xl border" id="msFeedbackBox">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span id="msFeedbackIcon" class="material-icons-round text-2xl"></span>
+                                <span id="msFeedbackTitle" class="font-bold text-lg"></span>
+                            </div>
+                            <p id="msFeedbackText" class="text-base leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="modeImageArea" class="hidden space-y-4 flex-1 flex flex-col">
+                    <p id="miInstruction" class="text-base text-slate-300 font-bold text-center">この画像が表す単語・フレーズは何でしょう？</p>
+                    <div id="miHintBox" class="text-center bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl py-2 px-5 w-fit mx-auto text-sm font-bold hidden tracking-wider"></div>
+                    <div id="miDefinitionBox" class="hidden p-5 bg-slate-900 rounded-2xl border border-slate-700 text-center shadow-inner my-auto flex-1 flex items-center justify-center">
+                        <p id="miDefinitionText" class="text-lg font-medium text-slate-300 italic leading-relaxed"></p>
+                    </div>
+                    <div id="miImageContainer" class="w-full h-56 bg-slate-900 rounded-2xl border border-slate-700 flex items-center justify-center overflow-hidden relative shadow-inner">
+                        <div id="imageLoadingSpinner" class="absolute inset-0 flex items-center justify-center bg-slate-900 z-10">
+                            <div class="animate-spin rounded-full h-10 w-10 border-b-4 border-amber-500"></div>
+                        </div>
+                        <img id="aiGeneratedImage" src="" alt="AI Generated Image" class="w-full h-full object-cover hidden opacity-90" onload="this.classList.remove('hidden'); document.getElementById('imageLoadingSpinner').classList.add('hidden');">
+                    </div>
+                    <div id="miAnswerArea" class="hidden mt-4 text-left">
+                        <div class="p-5 bg-emerald-900/20 rounded-2xl border border-emerald-500/20 mb-3 relative">
+                            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-2">Answer</span>
+                            <div class="flex justify-between items-center gap-3">
+                                <p id="miTarget" class="text-3xl font-black text-white tracking-wide"></p>
+                                <button onclick="playWebSpeechAPI(currentCard.targetPhrase, this)" class="text-emerald-400 hover:text-emerald-300 p-2 bg-emerald-500/20 rounded-xl min-w-[40px] justify-center shadow-sm"><span class="material-icons-round text-2xl">volume_up</span></button>
+                            </div>
+                            <p id="miMeaning" class="text-base text-emerald-300 mt-2 font-medium leading-relaxed"></p>
+                        </div>
+                    </div>
+                    <button id="miShowBtn" onclick="showImageAnswer()" class="w-full py-4 bg-slate-700 text-white rounded-xl font-bold shadow-lg hover:bg-slate-600 transition mt-4 text-lg">答えを見る</button>
+                </div>
+
+                <!-- 会話例 -->
+                <div id="quizDialogueContainer" class="hidden mt-5 p-4 bg-slate-900 rounded-2xl border border-slate-700">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Example Dialogue</span>
+                        <button onclick="speakDialogue(currentCard.dialogue, this)" class="flex items-center gap-1.5 text-sm bg-slate-800 text-slate-300 border border-slate-600 px-4 py-2 rounded-lg font-bold hover:bg-slate-700 min-w-[80px] justify-center shadow-sm"><span class="material-icons-round text-base">group</span> 聞く</button>
+                    </div>
+                    <div id="quizDialogueArea" class="text-base text-slate-300 space-y-2 font-medium leading-relaxed"></div>
+                </div>
+
+                <!-- 自己評価 -->
+                <div id="quizEvaluationArea" class="hidden mt-6 border-t border-slate-700 pt-5">
+                    <p class="text-center text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">How was it?</p>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="evaluateCard('hard')" class="py-4 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl font-bold text-sm hover:bg-rose-500/20 transition">ミス/難しい</button>
+                        <button onclick="evaluateCard('good')" class="py-4 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl font-bold text-sm hover:bg-indigo-500/20 transition">普通/悩んだ</button>
+                        <button onclick="evaluateCard('easy')" class="py-4 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm hover:bg-emerald-500/20 transition">完璧/簡単</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================== ⑤ COLLECTION (Dict) =================== -->
+        <section id="sec-collection" class="space-y-4 hidden">
+            <div class="glass-panel rounded-2xl p-5 md:p-6 shadow-lg border border-amber-500/20 relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl"></div>
+                <div class="flex justify-between items-center mb-5 border-b border-slate-700 pb-3 relative z-10">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span class="material-icons-round text-amber-400 text-2xl">library_books</span> My Phrase Dictionary
+                    </h3>
+                    <div class="flex gap-2 flex-wrap justify-end">
+                        <!-- ★ Myフレーズで物語を生成するボタン -->
+                        <button onclick="generateStoryFromPhrases()" class="text-xs text-amber-300 font-bold hover:text-amber-200 transition flex items-center bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
+                            <span class="material-icons-round text-sm mr-1">auto_awesome</span> フレーズから物語を生成
+                        </button>
+                        <button onclick="clearAllCollection()" class="text-xs text-rose-400 font-bold hover:text-rose-300 transition flex items-center bg-rose-500/10 px-3 py-2 rounded-lg border border-rose-500/20">
+                            全データ消去
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ★ AIショートストーリー表示エリア -->
+                <div id="storyDisplayArea" class="hidden mb-6 p-5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-amber-500/30 relative z-10 shadow-inner">
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="text-amber-400 font-bold text-sm flex items-center gap-1.5"><span class="material-icons-round text-base">auto_awesome</span> AI Short Story</h4>
+                        <button onclick="document.getElementById('storyDisplayArea').classList.add('hidden')" class="text-slate-400 hover:text-white transition"><span class="material-icons-round text-lg">close</span></button>
+                    </div>
+                    <div id="storyLoading" class="text-slate-400 text-sm font-medium animate-pulse flex items-center gap-2">
+                        <span class="material-icons-round animate-spin">refresh</span> 物語を執筆中...
+                    </div>
+                    <div id="storyContent" class="hidden space-y-4">
+                        <p id="storyTextEn" class="text-slate-200 leading-relaxed text-base font-medium"></p>
+                        <button onclick="speakText(document.getElementById('storyTextEn').innerText, this)" class="flex items-center gap-1 text-sm bg-amber-500/20 text-amber-300 px-4 py-2 rounded-xl font-bold hover:bg-amber-500/30 transition shadow-sm w-fit">
+                            <span class="material-icons-round text-xl">volume_up</span> 朗読を聞く
+                        </button>
+                        <div class="border-t border-slate-700 pt-3">
+                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1 tracking-wider">日本語訳</p>
+                            <p id="storyTextJa" class="text-slate-400 text-sm leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-400 mb-4 text-center relative z-10">💡 各カードを左に深くスワイプすると削除できます</p>
+                <div id="collectionEmpty" class="text-center py-10 text-slate-500 text-base hidden relative z-10">データがありません。フレーズを追加しましょう。</div>
+                <ul id="collectionList" class="space-y-4 max-h-[65vh] overflow-x-hidden overflow-y-auto pr-1 pb-4 relative z-10"></ul>
+            </div>
+        </section>
+
+        <!-- =================== ⑥ SETTINGS & DATA =================== -->
+        <section id="sec-settings" class="space-y-5 hidden pb-10">
+            <!-- ★ Firebase 完全自動同期 UI -->
+            <div class="glass-panel p-5 md:p-6 rounded-2xl shadow-lg relative overflow-hidden">
+                <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
+                <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2 relative z-10"><span class="material-icons-round text-indigo-400">cloud_sync</span> クラウド自動同期</h3>
+                <p class="text-sm text-slate-300 mb-4 relative z-10 leading-relaxed">
+                    裏側で安全なデータベースと自動接続されています。データを追加したり学習を進めるたびに、全自動でバックアップ・同期されます。
+                </p>
+                
+                <div class="space-y-4 relative z-10 bg-slate-900/50 p-5 rounded-2xl border border-slate-700">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 uppercase block mb-2">あなたの同期ID (スマホとPCで合わせるパスワード)</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="fbSyncIdInput" class="flex-1 p-3 bg-slate-800 border border-slate-600 rounded-xl text-lg text-white font-mono focus:outline-none focus:border-indigo-500 transition shadow-inner">
+                            <button onclick="applySyncId()" class="px-4 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-indigo-500 transition whitespace-nowrap">
+                                適用
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2">他の端末で同じデータを使いたい場合、このIDをコピーして別の端末に入力し「適用」を押してください。</p>
+                    </div>
+                </div>
+
+                <div class="border border-slate-700 p-4 rounded-xl flex items-center justify-center relative z-10 mt-5 bg-slate-900/30">
+                    <p id="cloudSyncStatus" class="text-sm font-bold flex items-center gap-2 text-slate-400">同期設定を読み込み中...</p>
+                </div>
+            </div>
+
+            <div class="glass-panel p-5 md:p-6 rounded-2xl shadow-lg border border-emerald-500/20 relative overflow-hidden">
+                <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2"><span class="material-icons-round text-emerald-400">save</span> 手動バックアップ</h3>
+                <p class="text-sm text-slate-400 mb-4 leading-relaxed">端末に直接ファイルを保存します。念のためのオフラインバックアップとしてご利用ください。</p>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <button onclick="exportJSONBackup()" class="py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl text-sm font-bold hover:bg-emerald-500/20 transition flex items-center justify-center gap-1.5 shadow-sm"><span class="material-icons-round text-lg">download</span> JSON出力</button>
+                    <button onclick="document.getElementById('importJsonInput').click()" class="py-3 bg-slate-800 text-slate-300 border border-slate-600 rounded-xl text-sm font-bold hover:bg-slate-700 transition flex items-center justify-center gap-1.5 shadow-sm"><span class="material-icons-round text-lg">upload</span> 復元 (読込)</button>
+                    <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="importJSONBackup(event)">
+                </div>
+                <button onclick="exportCSV()" class="w-full py-3 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-xl text-sm font-bold hover:bg-amber-500/20 transition flex items-center justify-center gap-1.5 mt-2 shadow-sm"><span class="material-icons-round text-lg">table_view</span> 単語帳をCSV出力 (Excel用)</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- =================== FOOTER NAVIGATION =================== -->
+    <nav class="fixed bottom-0 left-0 right-0 max-w-xl mx-auto glass-panel border-t-0 flex px-1.5 py-2 pb-safe z-40 rounded-t-3xl shadow-[0_-10px_30px_rgba(0,0,0,0.3)] grid grid-cols-5 gap-1">
+        <button onclick="switchSection('dashboard')" id="nav-dashboard" class="nav-btn flex flex-col items-center justify-center w-full text-indigo-400 transition py-2 rounded-2xl hover:bg-slate-800/50">
+            <span class="material-icons-round text-[26px] mb-0.5">home</span><span class="text-[11px] font-bold tracking-wide">Home</span>
+        </button>
+        <button onclick="switchSection('script')" id="nav-script" class="nav-btn flex flex-col items-center justify-center w-full text-slate-500 hover:text-pink-400 transition py-2 rounded-2xl hover:bg-slate-800/50">
+            <span class="material-icons-round text-[26px] mb-0.5">description</span><span class="text-[11px] font-bold tracking-wide">Script</span>
+        </button>
+        <button onclick="switchSection('speaking')" id="nav-speaking" class="nav-btn flex flex-col items-center justify-center w-full text-slate-500 hover:text-indigo-400 transition py-2 rounded-2xl hover:bg-slate-800/50">
+            <span class="material-icons-round text-[26px] mb-0.5">mic</span><span class="text-[11px] font-bold tracking-wide">Talk</span>
+        </button>
+        <button onclick="switchSection('spaced')" id="nav-spaced" class="nav-btn flex flex-col items-center justify-center w-full text-slate-500 hover:text-emerald-400 transition py-2 rounded-2xl hover:bg-slate-800/50">
+            <span class="material-icons-round text-[26px] mb-0.5">psychology</span><span class="text-[11px] font-bold tracking-wide">Quiz</span>
+        </button>
+        <button onclick="switchSection('collection')" id="nav-collection" class="nav-btn flex flex-col items-center justify-center w-full text-slate-500 hover:text-amber-400 transition py-2 rounded-2xl hover:bg-slate-800/50">
+            <span class="material-icons-round text-[26px] mb-0.5">library_books</span><span class="text-[11px] font-bold tracking-wide">Dict</span>
+        </button>
+    </nav>
+
+    <!-- =================== SCRIPT =================== -->
+    <script>
+        // ★ハイブリッド・セッティング★
+        // Gemini API用のキー（テキストと音声の生成に使います）
+        const myApiKey = "AIzaSyDvPH-23-oQ-NKTZBLDEE7DVszMVRxbNCk"; 
+        const isPreviewEnv = window.location.href.includes('googleusercontent') || typeof __app_id !== 'undefined';
+        const apiKey = isPreviewEnv ? "" : myApiKey;
+
+        const textModel = isPreviewEnv ? "gemini-2.5-flash-preview-09-2025" : "gemini-1.5-flash";
+        const ttsModel = "gemini-2.5-flash-preview-tts"; 
+
+        const STORAGE_KEY = 'ai_eng_hub_data_stable'; 
+        const LOGS_KEY = 'ai_eng_hub_script_logs';
+        const INIT_KEY = 'ai_eng_hub_init';
+
+        // ★★★ Firebase 完全自動同期の設定（ハードコード） ★★★
+        const firebaseConfig = {
+            apiKey: "AIzaSyDvPH-23-oQ-NKTZBLDEE7DVszMVRxbNCk",
+            authDomain: "english-hub-2e7c7.firebaseapp.com",
+            projectId: "english-hub-2e7c7",
+            storageBucket: "english-hub-2e7c7.firebasestorage.app",
+            messagingSenderId: "259073100161",
+            appId: "1:259073100161:web:a5f522483d46728ddec080"
+        };
+
+        // --- 状態管理変数 ---
+        let isMainRecording = false;
+        let timeLeft = 60;
+        let timerInterval = null;
+        const circumferenceSpeak = 540; 
+
+        function showToast(message, icon = 'info') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = message;
+            document.getElementById('toastIcon').innerText = icon;
+            toast.classList.remove('opacity-0', 'scale-90');
+            toast.classList.add('opacity-100', 'scale-100');
+            setTimeout(() => { 
+                toast.classList.remove('opacity-100', 'scale-100'); 
+                toast.classList.add('opacity-0', 'scale-90'); 
+            }, 3000); 
+        }
+
+        const defaultCards = [
+            { id: 'cr-sample-1', theme: 'Work', targetPhrase: 'overwhelmed', meaning: 'いっぱいいっぱいで、圧倒されて', imagePromptEn: 'A person looking extremely tired and surrounded by huge piles of paperwork on a desk', definitionEn: 'feeling like you have so much to do that you cannot even start', dialogue: [{ speaker: 'A', text: "How's the new project going?" }, { speaker: 'B', text: "To be honest, I'm completely overwhelmed." }], stage: 1, nextReviewDue: Date.now() - 1000, createdAt: Date.now() - 86400000 }
+        ];
+
+        function loadCards() {
+            let loadedCards = [];
+            try { const data = localStorage.getItem(STORAGE_KEY); if (data) loadedCards = JSON.parse(data); } catch(e){}
+            const isInitialized = localStorage.getItem(INIT_KEY);
+            if (!isInitialized) {
+                loadedCards = JSON.parse(JSON.stringify(defaultCards)); 
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedCards));
+                localStorage.setItem(INIT_KEY, 'true'); 
+            }
+            const unique = []; const seen = new Set();
+            for (const c of loadedCards) {
+                if(!c || !c.targetPhrase) continue;
+                const n = c.targetPhrase.trim().toLowerCase();
+                if(!seen.has(n)) { seen.add(n); unique.push(c); }
+            }
+            return unique;
+        }
+
+        let cards = loadCards();
+        let scriptLogs = [];
+        try { const d = localStorage.getItem(LOGS_KEY); if(d) scriptLogs = JSON.parse(d); } catch(e){}
+
+        // ★★★ Firebase 完全自動同期ロジック ★★★
+        let myFbDb = null;
+        let unsubscribeSnapshot = null;
+        window.lastLocalUpdate = 0;
+
+        // 同期IDの初期化（ランダム生成して保存）
+        let mySyncId = localStorage.getItem('ai_eng_hub_sync_id');
+        if (!mySyncId) {
+            mySyncId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('ai_eng_hub_sync_id', mySyncId);
+        }
+        document.getElementById('fbSyncIdInput').value = mySyncId;
+
+        // アプリ起動時にFirebaseに接続
+        async function initFirebase() {
+            try {
+                document.getElementById('cloudSyncStatus').innerHTML = `<span class="animate-spin material-icons-round text-indigo-400 text-lg">refresh</span><span class="text-indigo-400 ml-2">Firebaseに接続中...</span>`;
+                
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+                const { getFirestore } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                
+                const appName = 'EngHub_' + Date.now(); // 複数回初期化を防ぐ
+                const app = initializeApp(firebaseConfig, appName);
+                myFbDb = getFirestore(app);
+                
+                setupRealtimeSync();
+            } catch(e) {
+                console.error("Firebase Init Error:", e);
+                document.getElementById('cloudSyncStatus').innerHTML = `<span class="text-rose-500 font-bold flex items-center gap-2"><span class="material-icons-round text-lg">error</span> Firebase接続エラー</span>`;
+            }
+        }
+
+        async function setupRealtimeSync() {
+            if (!myFbDb) return;
+            try {
+                const { doc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                const docRef = doc(myFbDb, 'EngHubData', mySyncId);
+                
+                if (unsubscribeSnapshot) unsubscribeSnapshot(); 
+                
+                unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        // 自分が更新した直後のエコーバックは無視 (1.5秒以内の更新)
+                        if (data.updatedAt && data.updatedAt > window.lastLocalUpdate + 1500) {
+                            if (data.cards) cards = data.cards;
+                            if (data.logs) scriptLogs = data.logs;
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
+                            localStorage.setItem(LOGS_KEY, JSON.stringify(scriptLogs));
+                            updateDashboardStats();
+                            if(document.getElementById('sec-collection').classList.contains('block')) renderCollection();
+                            if(document.getElementById('sec-script').classList.contains('block') && !document.getElementById('view-script-log').classList.contains('hidden')) renderScriptLogs();
+                            showToast("クラウドからデータを受信・同期しました", "cloud_download");
+                            window.lastLocalUpdate = data.updatedAt;
+                        }
+                    }
+                });
+                
+                document.getElementById('cloudSyncStatus').innerHTML = `<span class="text-emerald-400 flex items-center gap-2"><span class="material-icons-round text-lg">cloud_done</span> リアルタイム同期中 (ID: ${mySyncId})</span>`;
+                
+                // 初回接続時に現在のローカルデータをアップロード
+                syncToCloud();
+                
+            } catch(e) { console.error("Snapshot Error:", e); }
+        }
+
+        async function syncToCloud() {
+            if (!myFbDb || !mySyncId) return;
+            try {
+                window.lastLocalUpdate = Date.now();
+                const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                const docRef = doc(myFbDb, 'EngHubData', mySyncId);
+                // merge:true で既存データを壊さずに上書き
+                await setDoc(docRef, { cards: cards, logs: scriptLogs, updatedAt: window.lastLocalUpdate }, { merge: true });
+            } catch(e) { console.error("Sync Error", e); }
+        }
+
+        // 同期IDを変更して適用する
+        function applySyncId() {
+            const newId = document.getElementById('fbSyncIdInput').value.trim();
+            if (!newId) {
+                showToast("同期IDを入力してください", "warning");
+                return;
+            }
+            mySyncId = newId;
+            localStorage.setItem('ai_eng_hub_sync_id', mySyncId);
+            showToast("同期IDを変更しました。データを同期します...", "sync");
+            setupRealtimeSync();
+        }
+
+        // --- データ保存 ---
+        function saveToStorage() { 
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cards)); 
+            syncToCloud();
+        }
+        function saveLogs() { 
+            localStorage.setItem(LOGS_KEY, JSON.stringify(scriptLogs)); 
+            syncToCloud();
+        }
+
+        // --- カスタムモーダル ---
+        let customModalCallback = null;
+        function showCustomModal(title, text, confirmBtnText, btnClass, callback) {
+            document.getElementById('customModalTitle').innerText = title;
+            document.getElementById('customModalText').innerText = text;
+            const btn = document.getElementById('customModalConfirmBtn');
+            btn.innerText = confirmBtnText;
+            btn.className = `px-5 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg ${btnClass}`;
+            customModalCallback = callback;
+            
+            const modal = document.getElementById('customModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('customModalContent').classList.remove('scale-95');
+            }, 10);
+        }
+        
+        function closeCustomModal() {
+            const modal = document.getElementById('customModal');
+            modal.classList.add('opacity-0');
+            document.getElementById('customModalContent').classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+        
+        document.getElementById('customModalConfirmBtn').addEventListener('click', () => {
+            if(customModalCallback) customModalCallback();
+            closeCustomModal();
+        });
+
+        // --- ★ 音声再生エンジン (自動キュー分割機能搭載) ★ ---
+        let isPlayingAudio = false; 
+        let currentTTSAudioElement = null;
+        let currentAudioBtn = null; 
+        let ttsQueue = [];
+        let isQueuePlaying = false;
+        let currentBasePayload = null;
+
+        function base64ToPcmWav(base64, sampleRate) {
+            const binary = atob(base64); const length = binary.length; const buffer = new ArrayBuffer(44 + length); const view = new DataView(buffer);
+            function writeString(v, offset, string) { for (let i = 0; i < string.length; i++) v.setUint8(offset + i, string.charCodeAt(i)); }
+            writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + length, true); writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true); writeString(view, 36, 'data');
+            view.setUint32(40, length, true);
+            for (let i = 0; i < length; i++) view.setUint8(44 + i, binary.charCodeAt(i));
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function splitTextIntoSentences(text) {
+            const sentences = text.match(/[^.!?\n]+[.!?\n]+/g) || [text];
+            return sentences.map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+        // ★ Gemini API (TTS) による高品質な再生 (スクリプト・Dialogue用)
+        async function playAITTS(payload, btnElement, fullText = "", isDialogue = false) {
+            const hasValidKey = apiKey && apiKey.startsWith("AIza");
+            if (!isPreviewEnv && !hasValidKey) {
+                // APIキーがない場合はフォールバック
+                playWebSpeechAPI(fullText || payload.contents[0].parts[0].text, btnElement);
+                return;
+            }
+
+            if (currentAudioBtn && currentAudioBtn === btnElement && isPlayingAudio) {
+                if (currentTTSAudioElement) {
+                    currentTTSAudioElement.pause();
+                    currentTTSAudioElement = null;
+                }
+                ttsQueue = []; 
+                isPlayingAudio = false;
+                isQueuePlaying = false;
+                currentAudioBtn.innerHTML = currentAudioBtn.getAttribute('data-original-html');
+                currentAudioBtn = null;
+                return;
+            }
+
+            if (currentAudioBtn && currentAudioBtn !== btnElement) {
+                currentAudioBtn.innerHTML = currentAudioBtn.getAttribute('data-original-html');
+                currentAudioBtn.disabled = false;
+                if (currentTTSAudioElement) currentTTSAudioElement.pause();
+                ttsQueue = [];
+                isPlayingAudio = false;
+                isQueuePlaying = false;
+            }
+
+            const textToSpeak = fullText || payload.contents[0].parts[0].text;
+            
+            // 会話の場合は分割せず、マルチスピーカー設定を一気に投げる
+            if (isDialogue) {
+                ttsQueue = [textToSpeak];
+            } else {
+                ttsQueue = splitTextIntoSentences(textToSpeak);
+            }
+            
+            currentBasePayload = payload;
+
+            if (btnElement) {
+                if (btnElement.disabled) return; 
+                if (!btnElement.hasAttribute('data-original-html')) {
+                    btnElement.setAttribute('data-original-html', btnElement.innerHTML);
+                }
+                btnElement.innerHTML = `<span class="animate-spin material-icons-round text-lg">refresh</span>`; 
+                btnElement.disabled = true; 
+                currentAudioBtn = btnElement;
+            }
+
+            isPlayingAudio = true;
+            isQueuePlaying = true;
+            playNextInQueue(btnElement);
+        }
+
+        async function playNextInQueue(btnElement) {
+            if (!isQueuePlaying || ttsQueue.length === 0) {
+                isPlayingAudio = false;
+                isQueuePlaying = false;
+                if (currentAudioBtn) {
+                    currentAudioBtn.innerHTML = currentAudioBtn.getAttribute('data-original-html');
+                    currentAudioBtn.disabled = false;
+                }
+                currentAudioBtn = null;
+                return;
+            }
+
+            const sentence = ttsQueue.shift(); 
+            
+            try {
+                const payload = JSON.parse(JSON.stringify(currentBasePayload)); 
+                payload.contents[0].parts[0].text = sentence;
+                payload.model = ttsModel;
+
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${ttsModel}:generateContent?key=${apiKey}`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                
+                if (!res.ok) throw new Error(`音声生成エラー (${res.status})`);
+                
+                const data = await res.json();
+                const inlineData = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData;
+                if(!inlineData) throw new Error("音声データなし");
+                
+                const sampleRate = parseInt((inlineData.mimeType.match(/rate=(\d+)/) || [])[1] || 24000, 10);
+                currentTTSAudioElement = new Audio(URL.createObjectURL(base64ToPcmWav(inlineData.data, sampleRate)));
+                
+                const speedSlider = document.getElementById('smSpeedSlider');
+                if (speedSlider) currentTTSAudioElement.playbackRate = parseFloat(speedSlider.value);
+
+                if (btnElement) {
+                    btnElement.disabled = false; 
+                    btnElement.innerHTML = `<span class="material-icons-round text-2xl text-rose-500">stop</span>`; 
+                }
+                
+                currentTTSAudioElement.onended = () => { 
+                    playNextInQueue(btnElement); 
+                };
+                
+                currentTTSAudioElement.onerror = () => { 
+                    throw new Error("音声再生エラー");
+                };
+                
+                await currentTTSAudioElement.play();
+                
+            } catch (e) { 
+                console.error(e);
+                isPlayingAudio = false;
+                isQueuePlaying = false;
+                if (currentAudioBtn) { 
+                    currentAudioBtn.innerHTML = currentAudioBtn.getAttribute('data-original-html'); 
+                    currentAudioBtn.disabled = false; 
+                } 
+                currentAudioBtn = null;
+                showToast("音声の読み込みに失敗しました", 'error'); 
+            }
+        }
+
+        // ★ ブラウザ内蔵音声 (Web Speech API) による素早い再生 (単語・短いフレーズ用) ★
+        function playWebSpeechAPI(text, btnElement) {
+            if(!text) return;
+            const cleanText = text.replace(/<[^>]*>?/gm, '').trim();
+            
+            if (currentAudioBtn && currentAudioBtn === btnElement && isPlayingAudio) {
+                window.speechSynthesis.cancel();
+                isPlayingAudio = false;
+                currentAudioBtn.innerHTML = currentAudioBtn.getAttribute('data-original-html');
+                currentAudioBtn = null;
+                return;
+            }
+
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
+
+            if (btnElement) {
+                if (!btnElement.hasAttribute('data-original-html')) {
+                    btnElement.setAttribute('data-original-html', btnElement.innerHTML);
+                }
+                currentAudioBtn = btnElement;
+                btnElement.innerHTML = `<span class="material-icons-round text-2xl text-rose-500">stop</span>`; 
+            }
+
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'en-US';
+            
+            const speedSlider = document.getElementById('smSpeedSlider');
+            if (speedSlider) utterance.rate = parseFloat(speedSlider.value);
+
+            utterance.onstart = () => { isPlayingAudio = true; };
+            utterance.onend = () => {
+                isPlayingAudio = false;
+                if (currentAudioBtn) {
+                    currentAudioBtn.innerHTML = currentAudioBtn.getAttribute('data-original-html');
+                    currentAudioBtn = null;
+                }
+            };
+            utterance.onerror = () => {
+                isPlayingAudio = false;
+                if (currentAudioBtn) {
+                    currentAudioBtn.innerHTML = currentAudioBtn.getAttribute('data-original-html');
+                    currentAudioBtn = null;
+                }
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // スクリプト（長文）はGeminiの落ち着いた男性音声 (Puck)
+        function speakText(text, btnElement) {
+            if(!text) return;
+            const cleanText = text.replace(/<[^>]*>?/gm, '').trim();
+            if(!cleanText || cleanText.includes("AIが解析後") || cleanText.includes("Failed to generate")) { showToast('読み上げるテキストがありません', 'warning'); return; }
+            const payload = { contents: [{ parts: [{ text: cleanText }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } } } } };
+            playAITTS(payload, btnElement, cleanText, false);
+        }
+
+        // 会話はGeminiの男女の掛け合い
+        function speakDialogue(dialogueArray, btnElement) {
+            if(!dialogueArray || dialogueArray.length === 0 || !btnElement) { showToast('会話例がありません', 'warning'); return; }
+            const text = dialogueArray.map(d => `${d.speaker}: ${d.text}`).join('\n');
+            const payload = { 
+                contents: [{ parts: [{ text: text }] }], 
+                generationConfig: { 
+                    responseModalities: ["AUDIO"], 
+                    speechConfig: { 
+                        voiceConfig: { 
+                            multiSpeakerVoiceConfig: { 
+                                speakerVoiceConfigs: [
+                                    { speaker: "A", voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } } },
+                                    { speaker: "B", voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } }
+                                ] 
+                            } 
+                        } 
+                    } 
+                } 
+            };
+            playAITTS(payload, btnElement, text, true);
+        }
+
+        // --- テキスト選択 ---
+        const selectionTooltip = document.getElementById('selectionTooltip');
+        let currentSelectedText = "";
+        document.addEventListener('selectionchange', () => {
+            const selection = window.getSelection();
+            if (!selection.isCollapsed && selection.toString().trim() !== "") {
+                const range = selection.getRangeAt(0); const rect = range.getBoundingClientRect();
+                currentSelectedText = selection.toString().trim();
+                selectionTooltip.style.top = `${rect.top + window.scrollY - 5}px`; selectionTooltip.style.left = `${rect.left + window.scrollX + rect.width / 2}px`;
+                selectionTooltip.classList.remove('hidden');
+            } else { setTimeout(() => { selectionTooltip.classList.add('hidden'); }, 150); }
+        });
+        selectionTooltip.addEventListener('mousedown', async (e) => {
+            e.preventDefault(); selectionTooltip.classList.add('hidden');
+            if (!currentSelectedText) return;
+            if (cards.some(c => c.targetPhrase.toLowerCase() === currentSelectedText.toLowerCase())) { showToast(`登録済です`, 'warning'); return; }
+            showToast(`生成中...`, 'sync');
+            const prompt = `以下の選択された英単語を辞書に登録するデータを作成しJSONで返してください。Markdown記号は不要。
+            フレーズ: "${currentSelectedText}"
+            {"targetPhrase": "${currentSelectedText}", "meaning": "日本語の意味", "imagePromptEn": "画像生成用英語", "definitionEn": "英語での定義", "dialogue": [{"speaker":"A","text":"..."}, {"speaker":"B","text":"..."}]}`;
+            try {
+                const data = await fetchAPI({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } });
+                const cleanJson = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const p = JSON.parse(cleanJson);
+                cards.push({ id: 'cr-' + Date.now(), theme: "Selection", targetPhrase: p.targetPhrase, meaning: p.meaning, imagePromptEn: p.imagePromptEn, definitionEn: p.definitionEn, dialogue: p.dialogue, stage: 1, nextReviewDue: Date.now()-1000, createdAt: Date.now() });
+                saveToStorage(); showToast(`追加しました！`, 'check_circle');
+                if (document.getElementById('sec-collection').classList.contains('block')) renderCollection();
+                updateDashboardStats();
+            } catch(err) { showToast('失敗しました', 'error'); }
+        });
+
+        // --- NAVIGATION ---
+        function switchSection(secId) {
+            if(isScriptRecording) toggleScriptVoiceInput();
+            if(isMainRecording) stopMainRecording();
+            if(isQuizInputRecording) toggleQuizVoiceInput();
+
+            if (isPlayingAudio) {
+                if (currentTTSAudioElement) currentTTSAudioElement.pause();
+                if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+                ttsQueue = [];
+                isPlayingAudio = false;
+                isQueuePlaying = false;
+                if (currentAudioBtn) {
+                    currentAudioBtn.innerHTML = currentAudioBtn.getAttribute('data-original-html');
+                    currentAudioBtn.disabled = false;
+                    currentAudioBtn = null;
+                }
+            }
+
+            ['dashboard', 'speaking', 'script', 'spaced', 'collection', 'settings'].forEach(id => {
+                const sec = document.getElementById(`sec-${id}`); const nav = document.getElementById(`nav-${id}`);
+                if(sec) sec.classList.add('hidden');
+                if(nav) { nav.classList.remove('text-indigo-400', 'text-emerald-400', 'text-amber-400', 'text-pink-400', 'bg-slate-800/50'); nav.classList.add('text-slate-500'); }
+            });
+            const targetSec = document.getElementById(`sec-${secId}`);
+            if(targetSec) targetSec.classList.remove('hidden');
+            
+            const targetNav = document.getElementById(`nav-${secId}`);
+            if(targetNav) {
+                if (secId === 'spaced') { targetNav.classList.replace('text-slate-500', 'text-emerald-400'); targetNav.classList.add('bg-slate-800/50'); initQuizSetup(); }
+                else if (secId === 'collection') { targetNav.classList.replace('text-slate-500', 'text-amber-400'); targetNav.classList.add('bg-slate-800/50'); renderCollection(); }
+                else if (secId === 'script') { targetNav.classList.replace('text-slate-500', 'text-pink-400'); targetNav.classList.add('bg-slate-800/50'); switchScriptTab('new'); }
+                else if (secId === 'speaking') { targetNav.classList.replace('text-slate-500', 'text-indigo-400'); targetNav.classList.add('bg-slate-800/50'); resetMainRecording(); }
+                else if (secId === 'dashboard') { targetNav.classList.replace('text-slate-500', 'text-indigo-400'); targetNav.classList.add('bg-slate-800/50'); updateDashboardStats(); }
+            }
+            document.getElementById('headerSubtitle').innerText = secId.toUpperCase();
+        }
+
+        function updateDashboardStats() {
+            const totalEl = document.getElementById('statsTotalCount');
+            const dueEl = document.getElementById('statsDueCount');
+            
+            if (totalEl) {
+                totalEl.innerText = cards.length;
+            }
+            if (dueEl) {
+                dueEl.innerText = cards.filter(c => !c.nextReviewDue || c.nextReviewDue <= Date.now()).length;
+            }
+        }
+
+        async function fetchAPI(payload) {
+            if (!isPreviewEnv && (!apiKey || !apiKey.startsWith("AIza"))) {
+                throw new Error("APIキーが不正です。AIzaから始まるキーをコードに設定してください。");
+            }
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${textModel}:generateContent?key=${apiKey}`;
+            for (let i = 0; i < 3; i++) {
+                try {
+                    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!res.ok) {
+                        throw new Error(`エラー (${res.status}): リクエスト内容を確認してください。`);
+                    }
+                    return await res.json();
+                } catch (e) { 
+                    if(i===2) {
+                        throw e; 
+                    }
+                    await new Promise(r => setTimeout(r, 1000 * (i+1))); 
+                }
+            }
+        }
+
+        function createRecognition(lang, onResult, onEnd) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return null;
+            const rec = new SpeechRecognition();
+            rec.lang = lang;
+            rec.continuous = true;
+            rec.interimResults = true;
+            rec.onresult = onResult;
+            if (onEnd) rec.onend = onEnd;
+            return rec;
+        }
+
+        // =================== 📝 SCRIPT MAKER & LOG ===================
+        let isScriptRecording = false; let tempScriptPhrases = [];
+        let scriptRecognition = null;
+        let currentGeneratedScriptData = null; 
+
+        function switchScriptTab(tab) {
+            if(tab === 'new') {
+                document.getElementById('view-script-new').classList.remove('hidden');
+                document.getElementById('view-script-log').classList.add('hidden');
+                document.getElementById('tab-script-new').className = "flex-1 py-3 text-sm font-bold rounded-xl bg-pink-500/20 text-pink-400 transition";
+                document.getElementById('tab-script-log').className = "flex-1 py-3 text-sm font-bold rounded-xl text-slate-400 hover:text-slate-200 transition";
+            } else {
+                document.getElementById('view-script-new').classList.add('hidden');
+                document.getElementById('view-script-log').classList.remove('hidden');
+                document.getElementById('tab-script-new').className = "flex-1 py-3 text-sm font-bold rounded-xl text-slate-400 hover:text-slate-200 transition";
+                document.getElementById('tab-script-log').className = "flex-1 py-3 text-sm font-bold rounded-xl bg-pink-500/20 text-pink-400 transition";
+                renderScriptLogs();
+            }
+        }
+
+        function toggleScriptVoiceInput() {
+            const btn = document.getElementById('smVoiceBtn'), input = document.getElementById('smInput');
+            const icon = document.getElementById('smVoiceIcon'), text = document.getElementById('smVoiceText');
+            
+            if (!isScriptRecording) {
+                scriptRecognition = createRecognition('ja-JP', 
+                    (e) => {
+                        let final = ""; for (let i = e.resultIndex; i < e.results.length; ++i) if (e.results[i].isFinal) final += e.results[i][0].transcript;
+                        if(final) input.value += (input.value ? " " : "") + final;
+                    },
+                    () => { if (isScriptRecording) { try { scriptRecognition.start(); } catch(e){} } }
+                );
+                if(!scriptRecognition) { showToast("音声認識未対応です", "warning"); return; }
+                
+                try {
+                    scriptRecognition.start(); isScriptRecording = true;
+                    btn.classList.replace('bg-pink-500/20', 'bg-rose-600'); 
+                    btn.classList.replace('text-pink-400', 'text-white'); 
+                    btn.classList.add('animate-pulse');
+                    icon.innerText = 'stop';
+                    text.classList.remove('hidden');
+                    showToast('音声入力開始', 'mic');
+                } catch(e) { showToast('マイクエラー', 'error'); }
+            } else { 
+                isScriptRecording = false; if(scriptRecognition) scriptRecognition.stop();
+                btn.classList.replace('bg-rose-600', 'bg-pink-500/20'); 
+                btn.classList.replace('text-white', 'text-pink-400');
+                btn.classList.remove('animate-pulse');
+                icon.innerText = 'mic';
+                text.classList.add('hidden');
+            }
+        }
+
+        async function generateScript() {
+            const txt = document.getElementById('smInput').value.trim(); if (!txt) { showToast("内容を入力してください", 'warning'); return; }
+            const btn = document.getElementById('smGenerateBtn'); btn.innerHTML = `<span class="animate-spin material-icons-round text-lg">refresh</span><span class="ml-2">生成中...</span>`; btn.disabled = true;
+            document.getElementById('smResultArea').classList.add('hidden');
+            
+            const prompt = `以下のトピック（日本語または英語が混在）に基づいて、ネイティブが約1分間で話せる量の英文スクリプトを作成してください。また関連する重要フレーズを【5個】抽出してください。
+出力は必ず以下のJSONフォーマットにし、Markdownのコードブロック(\`\`\`json)は使わずにプレーンなテキストで出力してください。
+{ "script": "英文スクリプト", "translation": "日本語訳", "phrases": [{"targetPhrase": "表現", "meaning": "意味", "imagePromptEn": "画像", "definitionEn": "定義", "dialogue": [{"speaker": "A", "text": "..."}, {"speaker": "B", "text": "..."}]}] }
+トピック: "${txt}"`;
+            try {
+                const data = await fetchAPI({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } }); 
+                const cleanJson = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const result = JSON.parse(cleanJson); 
+                
+                const rawScript = result.script || "Failed to generate script.";
+                const formattedScript = rawScript.replace(/([.?!])\s+/g, '$1<br><br>');
+                document.getElementById('smScriptText').innerHTML = formattedScript;
+                document.getElementById('smTranslationText').innerText = result.translation || "";
+                
+                tempScriptPhrases = result.phrases || [];
+                document.getElementById('smPhrasesList').innerHTML = tempScriptPhrases.map((p, idx) => `
+                    <li class="bg-slate-900/50 p-5 rounded-2xl border border-slate-700 flex justify-between items-center relative gap-2">
+                        <div><div class="font-extrabold text-pink-400 text-lg mb-1">${p.targetPhrase}</div><div class="text-slate-400 text-sm leading-relaxed">${p.meaning}</div></div>
+                        <button onclick="addScriptPhraseToDict(${idx}, this)" class="px-4 py-2 bg-pink-500/10 text-pink-400 border border-pink-500/20 text-xs font-bold rounded-xl hover:bg-pink-500/20 transition min-w-[70px] shadow-sm">+ 追加</button>
+                    </li>`).join('');
+                document.getElementById('smResultArea').classList.remove('hidden'); showToast('生成完了', 'check_circle');
+
+                currentGeneratedScriptData = { 
+                    id: 'log-'+Date.now(), 
+                    date: Date.now(), 
+                    topic: txt.substring(0, 30) + (txt.length > 30 ? '...' : ''), 
+                    script: rawScript 
+                };
+
+                const saveBtn = document.getElementById('smSaveLogBtn');
+                if (saveBtn) {
+                    saveBtn.innerHTML = `<span class="material-icons-round text-lg">save</span> ログに保存`;
+                    saveBtn.classList.remove('text-slate-500', 'border-slate-600');
+                    saveBtn.classList.add('text-pink-400', 'border-pink-500/30');
+                    saveBtn.disabled = false;
+                }
+
+            } catch(e) { 
+                console.error(e);
+                showToast("生成に失敗しました。もう一度お試しください。", 'error'); 
+            } finally { 
+                btn.innerHTML = `スクリプトを生成`; 
+                btn.disabled = false; 
+            }
+        }
+
+        function saveCurrentScript() {
+            if (!currentGeneratedScriptData) return;
+            
+            scriptLogs.push(currentGeneratedScriptData);
+            saveLogs();
+            showToast('ログに保存しました', 'save');
+            
+            const saveBtn = document.getElementById('smSaveLogBtn');
+            if (saveBtn) {
+                saveBtn.innerHTML = `<span class="material-icons-round text-lg">check</span> 保存済み`;
+                saveBtn.classList.remove('text-pink-400', 'border-pink-500/30');
+                saveBtn.classList.add('text-slate-500', 'border-slate-600');
+                saveBtn.disabled = true;
+            }
+            currentGeneratedScriptData = null; 
+        }
+
+        function addScriptPhraseToDict(idx, btnElement) {
+            const p = tempScriptPhrases[idx]; if(!p) return;
+            if (cards.some(c => c.targetPhrase.trim().toLowerCase() === p.targetPhrase.trim().toLowerCase())) { showToast(`登録済です`, 'warning'); return; }
+            cards.push({ id: 'cr-' + Date.now() + '-' + idx, theme: "Script Maker", targetPhrase: p.targetPhrase, meaning: p.meaning, imagePromptEn: p.imagePromptEn, definitionEn: p.definitionEn, dialogue: p.dialogue, stage: 1, nextReviewDue: Date.now()-1000, createdAt: Date.now() });
+            saveToStorage(); showToast(`追加しました`, 'check_circle');
+            btnElement.innerText = '✓ 追加済'; btnElement.classList.replace('bg-pink-500/10', 'bg-slate-800'); btnElement.classList.replace('text-pink-400', 'text-slate-500'); btnElement.disabled = true;
+        }
+
+        function renderScriptLogs() {
+            const list = document.getElementById('scriptLogList');
+            const empty = document.getElementById('scriptLogEmpty');
+            if(scriptLogs.length === 0) { empty.classList.remove('hidden'); list.innerHTML = ""; return; }
+            empty.classList.add('hidden');
+            list.innerHTML = [...scriptLogs].sort((a,b)=> b.date - a.date).map(log => `
+                <div class="glass-panel p-6 rounded-3xl shadow-lg border border-pink-500/20 relative">
+                    <button onclick="deleteLog('${log.id}')" class="absolute top-4 right-4 text-slate-500 hover:text-rose-500 transition p-1.5"><span class="material-icons-round text-xl">close</span></button>
+                    <div class="text-sm text-slate-400 mb-2">${new Date(log.date).toLocaleString()}</div>
+                    <div class="font-bold text-white mb-3 text-lg pr-8">${log.topic}</div>
+                    <div class="text-base text-slate-400 line-clamp-3 mb-4 leading-relaxed">${log.script}</div>
+                    <button onclick="speakText('${log.script.replace(/'/g, "\\'")}', this)" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-500 transition text-sm flex items-center justify-center gap-2">
+                        <span class="material-icons-round text-lg">volume_up</span> このスクリプトを読む
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function deleteLog(id) {
+            showCustomModal("ログの削除", "このスクリプトを削除してもよろしいですか？", "削除する", "bg-rose-600 hover:bg-rose-500", () => {
+                scriptLogs = scriptLogs.filter(l => l.id !== id); saveLogs(); renderScriptLogs();
+            });
+        }
+
+
+        // =================== 🎙️ Main Speaking & Extraction ===================
+        let speakingRecognition = null;
+
+        // ★新機能：AIにお題を考えてもらう
+        async function generateSpeakingTopic() {
+            const topicEnEl = document.getElementById('generatedTopicEn');
+            const topicJaEl = document.getElementById('generatedTopicJa');
+            const area = document.getElementById('topicDisplayArea');
+            
+            area.classList.remove('hidden');
+            topicEnEl.innerHTML = `<span class="animate-pulse">✨ お題を考え中...</span>`;
+            topicJaEl.innerText = "";
+            
+            const prompt = `英語のスピーキング練習のための、興味深く答えやすいお題（トピック）を1つ考えてください。
+JSONフォーマットで返してください。Markdown記号は不要です。
+{ "topicEn": "英語のお題", "topicJa": "日本語訳" }`;
+
+            try {
+                const data = await fetchAPI({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } });
+                const cleanJson = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const result = JSON.parse(cleanJson);
+                
+                topicEnEl.innerText = result.topicEn;
+                topicJaEl.innerText = result.topicJa;
+            } catch(e) {
+                topicEnEl.innerText = "エラーが発生しました。もう一度お試しください。";
+            }
+        }
+
+        async function toggleMainRecording() {
+            if (isMainRecording) { stopMainRecording(); return; }
+            
+            try {
+                document.getElementById('speakingResultArea').classList.add('hidden'); 
+                document.getElementById('analysisResultContainer').classList.add('hidden');
+                document.getElementById('btnAnalyzeSpeech').classList.add('hidden');
+                document.getElementById('correctedTranscript').innerText = "";
+
+                speakingRecognition = createRecognition('en-US', 
+                    (e) => {
+                        let total = ""; for(let i=0; i<e.results.length; i++) total += e.results[i][0].transcript;
+                        document.getElementById('transcript').innerText = total;
+                    },
+                    () => { if (isMainRecording) try{speakingRecognition.start();}catch(e){} }
+                );
+
+                if(!speakingRecognition) { showToast("音声認識未対応ブラウザです", 'warning'); return; }
+
+                isMainRecording = true; document.getElementById('transcript').innerText = "Listening...";
+                speakingRecognition.start();
+                
+                timeLeft = 60; setProgressSpeak(0); const btn = document.getElementById('recordBtn');
+                btn.innerText = "STOP"; btn.classList.replace("bg-indigo-600", "bg-rose-600"); btn.classList.add('recording-pulse');
+                document.getElementById('statusMessage').innerText = "🔴 録音中..."; showToast('英語で話してください', 'mic');
+
+                timerInterval = setInterval(() => { timeLeft--; document.getElementById('timerText').innerText = timeLeft; setProgressSpeak(((60 - timeLeft) / 60) * 100); if (timeLeft <= 0) stopMainRecording(); }, 1000);
+            } catch (err) { stopMainRecording(); showToast('マイクエラー', 'error'); }
+        }
+
+        function setProgressSpeak(percent) { document.getElementById('progressCircle').style.strokeDashoffset = circumferenceSpeak - (percent / 100 * circumferenceSpeak); }
+
+        function stopMainRecording() {
+            if (!isMainRecording) return;
+            isMainRecording = false; clearInterval(timerInterval);
+            if (speakingRecognition) speakingRecognition.stop();
+            
+            const btn = document.getElementById('recordBtn'); btn.innerText = "START"; btn.classList.replace("bg-rose-600", "bg-indigo-600"); btn.classList.remove('recording-pulse');
+            document.getElementById('statusMessage').innerText = "録音完了。AIに分析してもらいましょう！"; setProgressSpeak(100);
+            
+            const finalTxt = document.getElementById('transcript').innerText;
+            if(finalTxt !== "Listening..." && finalTxt.trim() !== "") {
+                document.getElementById('speakingResultArea').classList.remove('hidden'); 
+                document.getElementById('btnAnalyzeSpeech').classList.remove('hidden');
+                document.getElementById('analysisResultContainer').classList.add('hidden'); 
+            }
+        }
+
+        function startSpeechAnalysis() {
+            const finalTxt = document.getElementById('transcript').innerText;
+            document.getElementById('btnAnalyzeSpeech').classList.add('hidden'); 
+            analyzeSpeechText(finalTxt);
+        }
+
+        function resetMainRecording() {
+            stopMainRecording(); timeLeft = 60; document.getElementById('timerText').innerText = "60"; setProgressSpeak(0);
+            document.getElementById('speakingResultArea').classList.add('hidden'); 
+            document.getElementById('analysisResultContainer').classList.add('hidden');
+            document.getElementById('btnAnalyzeSpeech').classList.add('hidden');
+            document.getElementById('statusMessage').innerText = "英語のみで話し始めてください。";
+            document.getElementById('transcript').innerText = "";
+        }
+
+        let tempSpeakingPhrases = [];
+        async function analyzeSpeechText(text) {
+            if (!text.trim() || text === "Listening...") { showToast('テキストがありません', 'warning'); return; }
+            document.getElementById('aiLoading').classList.remove('hidden'); 
+            document.getElementById('analysisResultContainer').classList.add('hidden');
+            document.getElementById('grammarResults').innerHTML = ""; 
+            document.getElementById('analysisResults').innerHTML = "";
+            document.getElementById('grammarCorrectionsArea').classList.add('hidden'); 
+            document.getElementById('extractedPhrasesArea').classList.add('hidden');
+            
+            const prompt = `以下の英語の文字起こしを分析しJSONで返して。Markdown記号(\`\`\`json)は不要。プレーンテキストで出力。
+{ "correctedTranscript": "文法的に正しく自然な英語に修正した全文", "corrections": [{"original": "不自然な元の文", "corrected": "修正文", "explanation": "日本語の解説"}], "theme": "全体的なテーマ", "phrases": [{"targetPhrase": "覚えるべき1〜3語の表現", "meaning": "日本語の意味", "imagePromptEn": "画像生成用英語", "definitionEn": "英語での定義", "dialogue": [{"speaker": "A", "text": "..."}, {"speaker": "B", "text": "..."}]}] }
+※phrasesは5個抽出。
+文字起こし: "${text}"`;
+
+            try {
+                const data = await fetchAPI({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } }); 
+                const cleanJson = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const result = JSON.parse(cleanJson);
+                
+                document.getElementById('correctedTranscript').innerText = result.correctedTranscript || "修正箇所はありませんでした。";
+                if(result.corrections?.length > 0) {
+                    document.getElementById('grammarResults').innerHTML = result.corrections.map(item => `
+                        <li class="bg-slate-900/50 p-5 rounded-2xl border border-slate-700">
+                            <div class="text-rose-400 font-bold line-through text-sm">${item.original}</div>
+                            <div class="text-indigo-400 font-extrabold text-base flex items-center gap-2 mt-2"><span class="material-icons-round text-base">check_circle</span> ${item.corrected}</div>
+                            <div class="text-slate-400 text-sm mt-3 pl-3 border-l-2 border-indigo-500/30 leading-relaxed">${item.explanation}</div>
+                        </li>`).join('');
+                    document.getElementById('grammarCorrectionsArea').classList.remove('hidden');
+                }
+                document.getElementById('detectedTheme').innerText = result.theme || "General";
+                
+                tempSpeakingPhrases = result.phrases || [];
+                if(tempSpeakingPhrases.length > 0) {
+                    document.getElementById('analysisResults').innerHTML = tempSpeakingPhrases.map((p, idx) => `
+                        <li class="bg-slate-900/50 p-5 rounded-2xl border border-slate-700 flex justify-between items-center relative gap-2">
+                            <div><div class="font-extrabold text-indigo-400 text-lg mb-1">${p.targetPhrase}</div><div class="text-slate-400 text-sm leading-relaxed">${p.meaning}</div></div>
+                            <button onclick="addSpeakingPhraseToDict(${idx}, this)" class="px-4 py-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold rounded-xl hover:bg-indigo-500/20 transition min-w-[70px] shadow-sm">+ 追加</button>
+                        </li>`).join('');
+                    document.getElementById('extractedPhrasesArea').classList.remove('hidden');
+                }
+                
+                document.getElementById('analysisResultContainer').classList.remove('hidden');
+
+            } catch (err) { 
+                console.error(err); 
+                showToast('解析に失敗しました', 'error'); 
+            } finally { 
+                document.getElementById('aiLoading').classList.add('hidden'); 
+            }
+        }
+
+        function addSpeakingPhraseToDict(idx, btnElement) {
+            const p = tempSpeakingPhrases[idx]; if(!p) return;
+            if (cards.some(c => c.targetPhrase.trim().toLowerCase() === p.targetPhrase.trim().toLowerCase())) { showToast(`登録済です`, 'warning'); return; }
+            cards.push({ id: 'cr-' + Date.now() + '-' + idx, theme: document.getElementById('detectedTheme').innerText || "Speech", targetPhrase: p.targetPhrase, meaning: p.meaning, imagePromptEn: p.imagePromptEn, definitionEn: p.definitionEn, dialogue: p.dialogue, stage: 1, nextReviewDue: Date.now()-1000, createdAt: Date.now() });
+            saveToStorage(); showToast(`追加しました`, 'check_circle');
+            btnElement.innerText = '✓ 追加済'; btnElement.classList.replace('bg-indigo-500/10', 'bg-slate-800'); btnElement.classList.replace('text-indigo-400', 'text-slate-500'); btnElement.disabled = true;
+        }
+
+        // =================== 🧩 Creative Quiz ===================
+        let currentQuizList = [], currentCard = null, isQuizInputRecording = false;
+        let quizRecognition = null;
+
+        function initQuizSetup() {
+            document.getElementById('quizSetupArea').classList.remove('hidden'); document.getElementById('quizRunnerArea').classList.add('hidden');
+            currentQuizList = cards.filter(c => !c.nextReviewDue || c.nextReviewDue <= Date.now());
+            const estimatedMinutes = Math.ceil(currentQuizList.length * 0.5);
+            document.getElementById('quizInfoText').innerHTML = `今日取り組むタスク: <strong class="text-emerald-400 text-2xl">${currentQuizList.length}</strong> 個<br><span class="text-sm text-slate-400 mt-2 block">所要時間の目安: 約 ${estimatedMinutes} 分</span>`;
+        }
+
+        function startQuiz(mode) {
+            if (currentQuizList.length === 0) { showToast("本日のタスクは完了です！", "celebration"); return; }
+            document.getElementById('quizSetupArea').classList.add('hidden'); document.getElementById('quizRunnerArea').classList.remove('hidden');
+            loadNextCard(mode);
+        }
+
+        function loadNextCard(mode) {
+            if (currentQuizList.length === 0) { initQuizSetup(); return; }
+            currentCard = currentQuizList.shift();
+            if(!currentCard || !currentCard.targetPhrase) { loadNextCard(mode); return; } 
+
+            document.getElementById('quizCountText').innerText = `Tasks Left: ${currentQuizList.length}`;
+            
+            document.getElementById('quizThemeBadge').innerText = currentCard.theme || "General";
+            document.getElementById('quizStageBadge').innerText = "Stage " + (currentCard.stage || 1);
+            
+            document.getElementById('quizEvaluationArea').classList.add('hidden');
+            document.getElementById('msCheckBtn').innerHTML = `AIに判定してもらう`;
+            document.getElementById('msCheckBtn').disabled = false;
+            document.getElementById('msCheckBtn').classList.remove('hidden');
+            document.getElementById('msFeedbackArea').classList.add('hidden');
+            document.getElementById('msUserInput').value = "";
+            document.getElementById('miAnswerArea').classList.add('hidden');
+            document.getElementById('miShowBtn').classList.remove('hidden');
+            document.getElementById('quizDialogueContainer').classList.add('hidden');
+
+            const actualMode = mode === 'mix' ? (Math.random() > 0.5 ? 'sentence' : 'image') : mode;
+            const stage = currentCard.stage || 1;
+            const safeDialogue = currentCard.dialogue || [];
+            const safeImagePrompt = currentCard.imagePromptEn || currentCard.targetPhrase;
+
+            if (actualMode === 'sentence') {
+                document.getElementById('quizModeBadge').innerText = "Mode A: Make a Sentence"; document.getElementById('quizModeBadge').className = "inline-block px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 tracking-wider";
+                document.getElementById('modeSentenceArea').classList.remove('hidden'); document.getElementById('modeImageArea').classList.add('hidden');
+                document.getElementById('msTarget').innerText = currentCard.targetPhrase;
+                document.getElementById('msMeaning').innerText = currentCard.meaning || "";
+                setupDialogueHTML('quizDialogueArea', safeDialogue);
+            } else {
+                document.getElementById('quizModeBadge').innerText = "Mode B: Image Recall"; document.getElementById('quizModeBadge').className = "inline-block px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 tracking-wider";
+                document.getElementById('modeSentenceArea').classList.add('hidden'); document.getElementById('modeImageArea').classList.remove('hidden');
+                
+                const hintBox = document.getElementById('miHintBox'), defBox = document.getElementById('miDefinitionBox'), imgCont = document.getElementById('miImageContainer');
+                hintBox.classList.add('hidden'); defBox.classList.add('hidden'); imgCont.classList.add('hidden');
+                document.getElementById('miInstruction').innerText = "この画像が表す単語・フレーズは何でしょう？";
+
+                if (stage >= 5) {
+                    document.getElementById('miInstruction').innerText = "この英語の定義が表す単語は何でしょう？";
+                    defBox.classList.remove('hidden'); document.getElementById('miDefinitionText').innerText = `"${currentCard.definitionEn || 'No definition available.'}"`;
+                } else {
+                    imgCont.classList.remove('hidden'); document.getElementById('imageLoadingSpinner').classList.remove('hidden'); document.getElementById('aiGeneratedImage').classList.add('hidden');
+                    document.getElementById('aiGeneratedImage').src = `https://image.pollinations.ai/prompt/${encodeURIComponent(safeImagePrompt)}?width=400&height=300&nologo=true`;
+                    if (stage <= 2 && currentCard.targetPhrase) { hintBox.classList.remove('hidden'); hintBox.innerText = `Hint: Starts with '${currentCard.targetPhrase.charAt(0).toUpperCase()}...'`; }
+                }
+                setupDialogueHTML('quizDialogueArea', safeDialogue);
+            }
+        }
+
+        function setupDialogueHTML(elementId, dialogueArray) {
+            const el = document.getElementById(elementId);
+            if (!dialogueArray || dialogueArray.length === 0) { el.innerHTML = "<p class='text-slate-500 italic'>No dialogue available.</p>"; return; }
+            el.innerHTML = dialogueArray.map(d => `<p><span class="font-bold text-slate-500">${d.speaker}:</span> ${d.text}</p>`).join('');
+        }
+
+        function toggleQuizVoiceInput() {
+            const btn = document.getElementById('quizVoiceBtn'), input = document.getElementById('msUserInput');
+            const icon = document.getElementById('quizMicIcon');
+            if (!isQuizInputRecording) {
+                quizRecognition = createRecognition('en-US', 
+                    (e) => {
+                        let final = ""; for (let i = e.resultIndex; i < e.results.length; ++i) if (e.results[i].isFinal) final += e.results[i][0].transcript;
+                        if(final) input.value += (input.value ? " " : "") + final;
+                    },
+                    () => { if (isQuizInputRecording) { try { quizRecognition.start(); } catch(e){} } }
+                );
+                if(!quizRecognition) { showToast("未対応です", 'warning'); return; }
+
+                try {
+                    quizRecognition.start(); isQuizInputRecording = true;
+                    btn.classList.replace('bg-indigo-500/20', 'bg-rose-600'); 
+                    btn.classList.replace('text-indigo-400', 'text-white'); 
+                    btn.classList.add('animate-pulse');
+                    icon.innerText = 'stop';
+                    showToast('英語で話してください', 'mic');
+                } catch(e) { showToast("マイクエラー", "error"); }
+            } else { 
+                isQuizInputRecording = false;
+                if(quizRecognition) quizRecognition.stop();
+                btn.classList.replace('bg-rose-600', 'bg-indigo-500/20'); 
+                btn.classList.replace('text-white', 'text-indigo-400'); 
+                btn.classList.remove('animate-pulse');
+                icon.innerText = 'mic';
+            }
+        }
+
+        async function checkUserSentence() {
+            const txt = document.getElementById('msUserInput').value.trim(); if (!txt) return;
+            const btn = document.getElementById('msCheckBtn'); btn.innerHTML = `<span class="animate-spin material-icons-round text-lg">refresh</span><span class="ml-2">判定中...</span>`; btn.disabled = true;
+            const payload = { contents: [{ parts: [{ text: `以下のターゲットフレーズ「${currentCard.targetPhrase}」を使った学習者の例文：「${txt}」。文法的に正しく自然か判定しJSONで返して。Markdown不要。
+{ "isGood": true/false, "feedback": "フィードバック理由" }` }] }], generationConfig: { responseMimeType: "application/json" } };
+            try {
+                const data = await fetchAPI(payload); 
+                const cleanJson = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const result = JSON.parse(cleanJson);
+                
+                const fbBox = document.getElementById('msFeedbackBox');
+                fbBox.className = result.isGood ? "p-6 rounded-3xl border bg-emerald-900/20 border-emerald-500/30" : "p-6 rounded-3xl border bg-amber-900/20 border-amber-500/30";
+                document.getElementById('msFeedbackIcon').innerText = result.isGood ? "check_circle" : "edit_note"; document.getElementById('msFeedbackIcon').className = `material-icons-round text-2xl ${result.isGood ? 'text-emerald-400' : 'text-amber-400'}`;
+                document.getElementById('msFeedbackTitle').innerText = result.isGood ? "Great Job!" : "Good Try, but..."; document.getElementById('msFeedbackTitle').className = `font-bold text-xl ${result.isGood ? 'text-emerald-400' : 'text-amber-400'}`;
+                document.getElementById('msFeedbackText').innerText = result.feedback; document.getElementById('msFeedbackText').className = `text-base leading-relaxed ${result.isGood ? 'text-emerald-200' : 'text-amber-200'}`;
+                btn.classList.add('hidden'); document.getElementById('msFeedbackArea').classList.remove('hidden'); document.getElementById('quizEvaluationArea').classList.remove('hidden');
+                document.getElementById('quizDialogueContainer').classList.remove('hidden');
+            } catch(e) { btn.innerText = `エラー(もう一度)`; btn.disabled = false; }
+        }
+
+        function showImageAnswer() {
+            document.getElementById('miTarget').innerText = currentCard.targetPhrase;
+            document.getElementById('miMeaning').innerText = currentCard.meaning || "";
+            document.getElementById('miShowBtn').classList.add('hidden'); document.getElementById('miAnswerArea').classList.remove('hidden'); document.getElementById('quizEvaluationArea').classList.remove('hidden');
+            document.getElementById('quizDialogueContainer').classList.remove('hidden');
+        }
+
+        function evaluateCard(level) {
+            const intervals = { 1: 1, 2: 3, 3: 7, 4: 14, 5: 30, 6: 90 }; let stage = currentCard.stage || 1;
+            if (level === 'hard') { stage = 1; currentCard.nextReviewDue = Date.now() + 300000; } 
+            else if (level === 'good') { stage = Math.min(stage + 1, 6); currentCard.nextReviewDue = Date.now() + (intervals[stage] * 86400000); }
+            else { stage = Math.min(stage + 2, 6); currentCard.nextReviewDue = Date.now() + (intervals[stage] * 86400000); }
+            currentCard.stage = stage; cards = cards.map(c => c.id === currentCard.id ? currentCard : c); saveToStorage(); loadNextCard('mix');
+        }
+
+        // =================== 📚 Dictionary ===================
+        function speakCardTarget(id, btn) {
+            const c = cards.find(x => x.id === id);
+            if(c && c.targetPhrase) playWebSpeechAPI(c.targetPhrase, btn);
+        }
+        function speakCardDialogue(id, btn) {
+            const c = cards.find(x => x.id === id);
+            if(c && c.dialogue) speakDialogue(c.dialogue, btn);
+        }
+
+        // ★新機能：フレーズから物語を生成
+        async function generateStoryFromPhrases() {
+            if (cards.length < 3) {
+                showToast("単語が3つ以上必要です", "warning");
+                return;
+            }
+            
+            const shuffled = [...cards].sort(() => 0.5 - Math.random());
+            const selectedCards = shuffled.slice(0, Math.min(5, cards.length));
+            const phrases = selectedCards.map(c => c.targetPhrase);
+
+            const area = document.getElementById('storyDisplayArea');
+            const loading = document.getElementById('storyLoading');
+            const content = document.getElementById('storyContent');
+            const textEn = document.getElementById('storyTextEn');
+            const textJa = document.getElementById('storyTextJa');
+
+            area.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
+            
+            // スクロールして表示
+            area.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            const prompt = `以下の英単語/フレーズをすべて使って、短い面白い英語の物語(Short Story)を1つ作成してください。学習者のためのコンテキスト理解が目的です。
+使ったフレーズ：${phrases.join(', ')}
+
+出力はJSONフォーマットで返してください。Markdown記号は不要です。
+{ "storyEn": "英語の物語", "storyJa": "日本語訳" }`;
+
+            try {
+                const data = await fetchAPI({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } });
+                const cleanJson = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const result = JSON.parse(cleanJson);
+                
+                // フレーズをハイライト表示
+                let highlightedStory = result.storyEn;
+                phrases.forEach(p => {
+                    // 大文字小文字を区別せずに置換
+                    const regex = new RegExp(`\\b${p}\\b`, 'gi');
+                    highlightedStory = highlightedStory.replace(regex, `<span class="text-amber-400 font-bold bg-amber-500/10 px-1 rounded">$&</span>`);
+                });
+
+                textEn.innerHTML = highlightedStory;
+                textJa.innerText = result.storyJa;
+
+                loading.classList.add('hidden');
+                content.classList.remove('hidden');
+
+            } catch(e) {
+                loading.innerHTML = `<span class="text-rose-400">生成に失敗しました。</span>`;
+            }
+        }
+
+        function renderCollection() {
+            const list = document.getElementById('collectionList');
+            if (cards.length === 0) { document.getElementById('collectionEmpty').classList.remove('hidden'); list.innerHTML = ""; return; }
+            document.getElementById('collectionEmpty').classList.add('hidden');
+            
+            list.innerHTML = [...cards].sort((a,b) => b.createdAt - a.createdAt).map(c => `
+                <li class="relative overflow-hidden rounded-3xl mb-5" id="li-${c.id}">
+                    <div class="absolute inset-y-0 right-0 w-24 bg-rose-600 flex flex-col items-center justify-center text-white cursor-pointer hover:bg-rose-700 transition" onclick="deleteCard('${c.id}')">
+                        <span class="material-icons-round text-3xl">delete</span>
+                        <span class="text-sm font-bold mt-1">Delete</span>
+                    </div>
+                    <div class="swipeable-card relative bg-slate-800 p-6 rounded-3xl border border-slate-700 z-10 transition-transform duration-300 shadow-sm" data-id="${c.id}">
+                        <div class="flex justify-between items-start pr-2">
+                            <div><div class="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-2">${c.theme}</div><div class="text-white font-extrabold text-2xl">${c.targetPhrase}</div></div>
+                            <button onclick="speakCardTarget('${c.id}', this)" class="text-amber-400 hover:text-amber-300 p-2.5 min-w-[50px] flex items-center justify-center bg-amber-500/10 rounded-xl transition shadow-sm"><span class="material-icons-round text-2xl">volume_up</span></button>
+                        </div>
+                        <div class="text-slate-400 text-base mt-3 border-l-2 border-amber-500/30 pl-3 leading-relaxed">${c.meaning || ''}</div>
+                        ${c.dialogue && c.dialogue.length > 0 ? `
+                        <div class="mt-5 p-4 bg-slate-900/80 rounded-2xl text-sm text-slate-300 border border-slate-700">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="font-bold text-[10px] uppercase text-slate-500">Dialogue</span>
+                                <button onclick="speakCardDialogue('${c.id}', this)" class="flex items-center gap-1.5 text-xs bg-slate-800 text-slate-300 border border-slate-600 px-4 py-2 rounded-xl font-bold hover:bg-slate-700 min-w-[80px] justify-center transition shadow-sm">
+                                    <span class="material-icons-round text-sm">group</span> 聞く
+                                </button>
+                            </div>
+                            <div class="space-y-2 leading-relaxed">${c.dialogue.map(d => `<p><span class="font-bold text-slate-500">${d.speaker}:</span> ${d.text}</p>`).join('')}</div>
+                        </div>` : ''}
+                        <div class="mt-5 flex gap-3">
+                            <span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">Stage: ${c.stage}</span>
+                            <span class="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full border border-indigo-500/20">次回: ${new Date(c.nextReviewDue).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                </li>`).join('');
+            attachSwipeEvents();
+        }
+
+        function attachSwipeEvents() {
+            const swipeCards = document.querySelectorAll('.swipeable-card');
+            swipeCards.forEach(card => {
+                let startX = 0; let currentX = 0; let isDragging = false;
+                card.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; isDragging = true; card.style.transition = 'none'; }, {passive: true});
+                card.addEventListener('touchmove', (e) => {
+                    if (!isDragging) return; 
+                    currentX = e.touches[0].clientX; 
+                    let diff = currentX - startX;
+                    if (diff < -30) { 
+                        diff = (diff + 30) * 0.3; 
+                        diff = Math.max(diff, -100); 
+                        card.style.transform = `translateX(${diff}px)`; 
+                    } else { 
+                        card.style.transform = `translateX(0px)`; 
+                    }
+                }, {passive: true});
+                card.addEventListener('touchend', () => {
+                    isDragging = false; 
+                    card.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'; 
+                    let diff = currentX - startX;
+                    if (diff < -80) { 
+                        card.style.transform = `translateX(-96px)`; 
+                        setTimeout(() => { card.style.transform = `translateX(0px)`; }, 4000); 
+                    } else { 
+                        card.style.transform = `translateX(0px)`; 
+                    }
+                });
+            });
+        }
+
+        function deleteCard(id) {
+            const li = document.getElementById(`li-${id}`);
+            if (li) { li.style.transition = 'all 0.3s ease'; li.style.opacity = '0'; li.style.transform = 'scale(0.95)'; setTimeout(() => { li.style.display = 'none'; }, 300); }
+            cards = cards.filter(c => c.id !== id); saveToStorage(); updateDashboardStats(); showToast('削除しました', 'delete'); setTimeout(renderCollection, 350); 
+        }
+
+        function clearAllCollection() { 
+            showCustomModal("全データ消去", "本当に全てのデータを削除しますか？この操作は取り消せません。", "すべて削除", "bg-rose-600 hover:bg-rose-500", () => {
+                cards = []; saveToStorage(); renderCollection(); updateDashboardStats(); showToast('全データを消去しました', 'delete_sweep'); 
+            });
+        }
+
+        // =================== 💾 DATA MANAGEMENT & CLOUD ===================
+        function exportJSONBackup() {
+            const data = { cards, logs: scriptLogs, exportDate: new Date().toISOString() };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `ai_english_hub_backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("バックアップをダウンロードしました", "download_done");
+        }
+
+        function importJSONBackup(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(data.cards && Array.isArray(data.cards)) {
+                        showCustomModal("データのインポート", "既存のデータはすべて上書きされます。インポートを実行しますか？", "インポート", "bg-emerald-600 hover:bg-emerald-500", () => {
+                            cards = data.cards; scriptLogs = data.logs || [];
+                            saveToStorage(); saveLogs(); updateDashboardStats();
+                            showToast("復元しました", "check_circle");
+                        });
+                    } else { showToast("無効なファイル形式です", "error"); }
+                } catch(err) { showToast("ファイルの読み込みに失敗", "error"); }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // reset
+        }
+
+        function exportCSV() {
+            if(cards.length === 0) { showToast("データがありません", "warning"); return; }
+            let csv = "ID,Theme,Target Phrase,Meaning,Stage,Next Review\n";
+            cards.forEach(c => {
+                const escapeCSV = (str) => `"${(str||'').replace(/"/g, '""')}"`;
+                csv += `${c.id},${escapeCSV(c.theme)},${escapeCSV(c.targetPhrase)},${escapeCSV(c.meaning)},${c.stage},${new Date(c.nextReviewDue).toLocaleDateString()}\n`;
+            });
+            const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' }); 
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `my_phrases_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("CSVを出力しました", "table_view");
+        }
+
+        const smSpeedSlider = document.getElementById('smSpeedSlider'); 
+        const smSpeedValue = document.getElementById('smSpeedValue');
+        if (smSpeedSlider) { 
+            smSpeedSlider.addEventListener('input', (e) => { 
+                const speed = parseFloat(e.target.value).toFixed(1); 
+                smSpeedValue.innerText = speed + 'x'; 
+                if (currentTTSAudioElement && isPlayingAudio) { 
+                    currentTTSAudioElement.playbackRate = speed; 
+                } 
+            }); 
+        }
+
+        window.onload = () => { switchSection('dashboard'); };
+    </script>
+</body>
+</html>
